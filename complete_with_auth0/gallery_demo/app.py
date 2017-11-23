@@ -101,7 +101,6 @@ def callback_handling():
         auth0_domain=env[constants.AUTH0_DOMAIN])
     token_payload = {
         constants.CLIENT_ID_KEY: env[constants.AUTH0_CLIENT_ID],
-        constants.CLIENT_SECRET_KEY: env[constants.AUTH0_CLIENT_SECRET],
         constants.REDIRECT_URI_KEY: env[constants.AUTH0_CALLBACK_URL],
         constants.CODE_KEY: code,
         constants.GRANT_TYPE_KEY: constants.AUTHORIZATION_CODE_KEY

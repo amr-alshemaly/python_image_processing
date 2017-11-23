@@ -1,12 +1,14 @@
 $(document).ready(function() {
-     var lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
-        auth: {
-          redirectUrl: AUTH0_CALLBACK_URL
-        }
-     });
+  var auth0 = new window.auth0.WebAuth({
+    clientID: AUTH0_CLIENT_ID,
+    domain: AUTH0_DOMAIN,
+    scope: "openid email profile",
+    responseType: "code",
+    redirectUri: AUTH0_CALLBACK_URL
+  });
 
-    $('.login').click(function(e) {
-      e.preventDefault();
-      lock.show();
-    });
+  $('.login').click(function(e) {
+    e.preventDefault();
+    auth0.authorize();
+  });
 });
