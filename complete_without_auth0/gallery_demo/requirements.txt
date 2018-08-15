@@ -1,4 +1,4 @@
-dotenv==0.0.5
+python-dotenv==0.9.1
 Flask==0.12.1
 Flask-Bootstrap==3.3.7.1
 Pillow==4.1.0

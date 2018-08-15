@@ -2,22 +2,19 @@ from flask import Flask, render_template, redirect, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
 from PIL import Image
 from werkzeug.utils import secure_filename
-from dotenv import Dotenv
+from dotenv import load_dotenv, find_dotenv
 from functools import wraps
 import os
 import constants
 import requests
 
 # Load Env variables
-env = None
-
-try:
-    env = Dotenv('./.env')
-except IOError:
-    env = os.environ
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
-app.secret_key = env['SECRET_KEY']
+app.secret_key = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +39,12 @@ def is_logged_in():
 
 @app.route('/')
 def index():
-    return render_template('index.html', env=env, logged_in=is_logged_in())
+    authorize_url = 'https://{auth0_domain}/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}'\
+        .format(
+            auth0_domain=os.environ.get(constants.AUTH0_DOMAIN),
+            client_id=os.environ.get(constants.AUTH0_CLIENT_ID),
+            redirect_uri=os.environ.get(constants.AUTH0_CALLBACK_URL))
+    return render_template('index.html', env=os.environ, logged_in=is_logged_in(), authorize_url=authorize_url)
 
 @app.route('/gallery')
 def gallery():
@@ -90,7 +92,7 @@ def upload():
 def logout():
     session.clear()
     return redirect('https://{auth0_domain}/v2/logout?client_id={auth0_client_id}&returnTo={app_url}'\
-        .format(auth0_domain=env[constants.AUTH0_DOMAIN], auth0_client_id=env[constants.AUTH0_CLIENT_ID],
+        .format(auth0_domain=os.environ.get(constants.AUTH0_DOMAIN), auth0_client_id=os.environ.get(constants.AUTH0_CLIENT_ID),
             app_url='http://localhost:3000'))
 
 @app.route('/callback')
@@ -98,10 +100,11 @@ def callback_handling():
     code = request.args.get(constants.CODE_KEY)
     json_header = {constants.CONTENT_TYPE_KEY: constants.APP_JSON_KEY}
     token_url = 'https://{auth0_domain}/oauth/token'.format(
-        auth0_domain=env[constants.AUTH0_DOMAIN])
+        auth0_domain=os.environ.get(constants.AUTH0_DOMAIN))
     token_payload = {
-        constants.CLIENT_ID_KEY: env[constants.AUTH0_CLIENT_ID],
-        constants.REDIRECT_URI_KEY: env[constants.AUTH0_CALLBACK_URL],
+        constants.CLIENT_ID_KEY: os.environ.get(constants.AUTH0_CLIENT_ID),
+        constants.CLIENT_SECRET_KEY: os.environ.get(constants.AUTH0_CLIENT_SECRET),
+        constants.REDIRECT_URI_KEY: os.environ.get(constants.AUTH0_CALLBACK_URL),
         constants.CODE_KEY: code,
         constants.GRANT_TYPE_KEY: constants.AUTHORIZATION_CODE_KEY
     }
@@ -110,7 +113,7 @@ def callback_handling():
         headers=json_header).json()
 
     user_url = 'https://{auth0_domain}/userinfo?access_token={access_token}'\
-        .format(auth0_domain=env[constants.AUTH0_DOMAIN],
+        .format(auth0_domain=os.environ.get(constants.AUTH0_DOMAIN),
             access_token=token_info[constants.ACCESS_TOKEN_KEY])
 
     user_info = requests.get(user_url).json()
